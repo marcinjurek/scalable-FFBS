@@ -8,11 +8,12 @@ spatial.dim = 2
 n = 34**2
 m = 50
 frac.obs = 0.1
-Tmax = 5
+Tmax = 20
 diffusion = 0.00004
 advection = 0.01
 evolFun = function(X) evolAdvDiff(X, adv = advection, diff = diffusion)
-Nsamples = 10
+Nsamples = 50
+max.iter = 100
 
 
 ## covariance parameters

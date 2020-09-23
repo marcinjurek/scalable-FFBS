@@ -8,12 +8,14 @@ smoothedMeans = function(approx.name, Y){
     Tmax = length(Y)
     or = approx$ord
     
+    cat("Smoothing\n")
+    
     means = list()
     means[[ Tmax ]] = preds[[ Tmax ]]$state
     
     for (t in (Tmax - 1):1) {
 
-        cat(paste("Smoothing: t=", t, "\n", sep = ""))
+        #cat(paste("Smoothing: t=", t, "\n", sep = ""))
         
         E = evolFun( Matrix::Diagonal( n ) )[ or, or ]
         L = preds[[ t ]]$L
@@ -28,7 +30,7 @@ smoothedMeans = function(approx.name, Y){
 
     }
 
-    cat("done smoothing\n")
+    #cat("done smoothing\n")
     #return( means )
     return( list( means = means, preds = preds ) )
 }
@@ -84,6 +86,7 @@ filter = function(approx.name, Y){
   approx = approximations[[ approx.name ]]
   preds = list()
 
+  cat("Filtering\n")
   #cat(paste("filtering: t=1\n", sep = ""))
   #cat("\tCalculate covariance elements from function: ")
   #t0 = proc.time()

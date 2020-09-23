@@ -22,6 +22,39 @@ getLtt = function(vecchia.approx, preds){
   return(L.tt)
 }
 
+getCPRSscores = function(truth, smoothed){
+  Tmax = length(truth)
+  scores = rep(0, Tmax)
+  samples.t = purrr:::transpose(samples)
+  for (t in 1:Tmax) {
+    mu = as.numeric(smoothed[[t]]$state)
+    sig = as.matrix(smoothed[[t]]$var)
+    scores[t] = scoringRules::crps_norm(as.numeric(truth[[t]]), mean = mu, sd = sig)
+  }
+  return(scores)
+}
+
+getScores = function(truth, samples = NULL, smoothed = NULL){
+  if(!is.null(samples)){
+    getSampleScores(truth, samples)
+  } else if(!is.null(smoothed)){
+    getCPRSscores(truth, smoothed)
+  } else {
+    stop("not enough data to evaluate the score")
+  }
+}
+
+getSampleScores = function(truth, samples){
+  Tmax = length(truth)
+  scores = rep(0, Tmax)
+  samples.t = purrr::transpose(samples)
+  for (t in 1:Tmax) {
+    dat = as.matrix(do.call(cbind, samples.t[[t]]))
+    scores[t] = scoringRules::es_sample(as.numeric(truth[[t]]), dat)
+  }
+  return(scores)
+}
+
 
 
 getConfInt = function(preds, alpha){
