@@ -62,7 +62,7 @@ for (iter in 1:max.iter) {
 }
 
 pdf("trajectory-sig2.pdf")
-plot(draws$sig2)
+plot(draws$sig2, type="l")
 dev.off()
 
 
