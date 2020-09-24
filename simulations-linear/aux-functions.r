@@ -122,7 +122,8 @@ getSDFromSamples = function(samples){
     list.variance = list.squared.mean - list.mean^2
     sqrt(list.variance)  
   }
-  
+
+    samples = purrr::transpose(samples)
   sds = mapply( getSD, samples )
   return( sds )
 }
