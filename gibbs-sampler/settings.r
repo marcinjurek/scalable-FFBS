@@ -14,27 +14,29 @@ library(Matrix)
 library(doParallel)
 library(invgamma)
 registerDoParallel(cores = 6)
-source('aux-functions.r')
+
+
+options(digits=4)
 
 
 ######### set parameters #########
 #set.seed(1988)
 spatial.dim = 2
 n = 34**2
-m = 50
-frac.obs = 1.0
-Tmax = 20
-diffusion = 0.00004
-advection = 0.01
+m = 34
+frac.obs = 0.5
+Tmax = 1
+diffusion = 0.0#0004
+advection = 0.0#1
 
 
 evolFun = function(X) evolAdvDiff(X, adv = advection, diff = diffusion)
-Nsamples = 100
-max.iter = 1
+Nsamples = 1
+max.iter = 10
 
 
 ## covariance parameters
-sig2 = 0.5; range = 0.2; smooth = 0.5; 
+sig2 = 0.5; range = 0.5; smooth = 0.5; 
 covparms = c(sig2,range,smooth)
 
 covfun.base = function(locs, covparms) GPvecchia::MaternFun(fields::rdist(locs), covparms)
@@ -45,7 +47,7 @@ covfun.d = function(D) covfun.base.d(D, covparms)
 
 
 ## likelihood settings
-me.var = 1e-6;
+me.var = 1e-8;
 args = commandArgs(trailingOnly = TRUE)
 if (length(args) == 1) {
   if (!(args[1] %in% c("gauss", "poisson", "logistic", "gamma"))) {

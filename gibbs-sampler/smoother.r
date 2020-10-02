@@ -8,24 +8,26 @@ smoothedMeans = function(approx.name, Y, sig2){
     Tmax = length(Y)
     or = approx$ord
     
-    cat("Smoothing\n")
+    #cat("Smoothing\n")
     
     means = list()
     means[[ Tmax ]] = preds[[ Tmax ]]$state
-    
-    for (t in (Tmax - 1):1) {
 
-        E = evolFun( Matrix::Diagonal( n ) )[ or, or ]
-        L = preds[[ t ]]$L
-        V = preds[[ t ]]$V
+    if ( Tmax > 1 ) {    
+        for (t in (Tmax - 1):1) {
+
+            E = evolFun( Matrix::Diagonal( n ) )[ or, or ]
+            L = preds[[ t ]]$L
+            V = preds[[ t ]]$V
                
-        means[[ t ]] = means[[ t + 1 ]] - preds[[ t + 1 ]]$stateF        
-        means[[ t ]] = solve( L, means[[ t ]][ or ], sparse = TRUE )
-        means[[ t ]] = Matrix::t( E ) %*% solve( Matrix::t( L ), means[[ t ]], sparse = TRUE)
-        means[[ t ]] = matrix( rev( means[[ t ]] ), ncol = 1 )
-        means[[ t ]] = solve( Matrix::t( V ), solve( V, means[[ t ]], sparse = TRUE ), sparse = TRUE )
-        means[[ t ]] = preds[[ t ]]$state + matrix( rev( means[[ t ]] )[ order( or ) ], ncol = 1 )
+            means[[ t ]] = means[[ t + 1 ]] - preds[[ t + 1 ]]$stateF        
+            means[[ t ]] = solve( L, means[[ t ]][ or ], sparse = TRUE )
+            means[[ t ]] = Matrix::t( E ) %*% solve( Matrix::t( L ), means[[ t ]], sparse = TRUE)
+            means[[ t ]] = matrix( rev( means[[ t ]] ), ncol = 1 )
+            means[[ t ]] = solve( Matrix::t( V ), solve( V, means[[ t ]], sparse = TRUE ), sparse = TRUE )
+            means[[ t ]] = preds[[ t ]]$state + matrix( rev( means[[ t ]] )[ order( or ) ], ncol = 1 )
 
+        }
     }
 
     return( list( means = means, preds = preds ) )
@@ -35,7 +37,7 @@ smoothedMeans = function(approx.name, Y, sig2){
 
 KalmanSmoother = function(Y){
 
-  cat(paste("Filtering"))
+  #cat(paste("Filtering\n"))
   filtered = filter('exact', Y)
   Tmax = length(Y)
   or = approximations[[ 'exact' ]]$ord
@@ -46,10 +48,14 @@ KalmanSmoother = function(Y){
   smoothed[[ Tmax ]] = list(state = filtered[[ Tmax ]]$state, var = sVar)
   
   E = evolFun( Matrix::Diagonal( n ) )[ or, or ]
-  
+
+    if(Tmax==1){
+        return(list(smoothed = smoothed, filtered = filtered))
+    }
+    
   for (t in (Tmax - 1):1) {
     
-    cat(paste("Smoothing: t=", t, "\n", sep = ""))
+    #cat(paste("Smoothing: t=", t, "\n", sep = ""))
     
     L = filtered[[ t ]]$L
     L.ord = filtered[[ t ]]$L[ order( or ), order( or ) ]
@@ -82,14 +88,14 @@ filter = function(approx.name, Y, sig2){
   approx = approximations[[ approx.name ]]
   preds = list()
 
-  cat("Filtering\n")
+  #cat("Filtering\n")
 
-  covparms[1] = sig2
+  covparms[1] = 1.0
   covfun.d = function(D) covfun.base.d(D, covparms)
-  
-  covmodel = getMatCov(approx, covfun.d)
-  Ltt1 = GPvecchia::createL( approx, covparms, covmodel )
 
+  covmodel = getMatCov(approx, covfun.d)    
+  Ltt1 = GPvecchia::createL( approx, covparms, covmodel )
+    
   mu.tt1 = matrix( rep(0, n), ncol = 1 )
   obs.aux = as.numeric(Y[[1]])
 
@@ -103,8 +109,11 @@ filter = function(approx.name, Y, sig2){
 
   mu.tt = matrix(preds.aux$mean, ncol = 1)
   preds[[1]] = list(state = mu.tt, V = preds.aux$V, L = Ltt1, stateF = mu.tt1)
+    
+  covparms[1] = sig2
+  covfun.d = function(D) covfun.base.d(D, covparms)
 
-  
+    
   if ( Tmax > 1 ) {
     
     for (t in 2:Tmax) {

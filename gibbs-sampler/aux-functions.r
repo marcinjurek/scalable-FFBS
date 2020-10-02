@@ -1,19 +1,3 @@
-### This function is used mainly for testing.
-### It takes the entire covariance matrix and creates
-### a matrix of covariances
-getL00 = function(vecchia.approx, covfun, locs){
-  Sig.sel = GPvecchia::getMatCov(vecchia.approx, covfun(locs))
-  inds = Filter(function(i) !is.na(i), as.vector(t(vecchia.approx$U.prep$revNNarray - 1)))
-  ptrs = c(0, cumsum(apply(vecchia.approx$U.prep$revNNarray, 1, function(r) sum(!is.na(r)))))
-  cov.vals = Filter(function(i) !is.na(i), c(t(Sig.sel)))
-  vals = GPvecchia::ic0(ptrs, inds, cov.vals)
-  Laux = Matrix::sparseMatrix(j = inds, p = ptrs, x = vals, index1 = FALSE)
-  ro = order(vecchia.approx$ord)
-  return(Laux)
-}
-
-
-
 getLtt = function(vecchia.approx, preds){
   n = nrow(vecchia.approx$locsord)
   orig.order = order(vecchia.approx$ord)

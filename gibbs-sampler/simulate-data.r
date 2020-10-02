@@ -6,9 +6,10 @@ simulate.y = function(x, avail.obs, lik.params){
   if (length( avail.obs ) == 1) {
     obs.inds = sample(1:n, n.obs, replace = FALSE)
   } else {
-    obs.inds = which( !is.na(avail.obs) )
+      obs.inds = which( !is.na(avail.obs) )
+      n.obs = length(obs.inds)
   }
-  
+    
   data.model = lik.params["data.model"]
   # simulate data
   if (data.model == 'poisson') {
@@ -40,9 +41,13 @@ simulate.xy = function(x0, E, Q, avail.obs, lik.params, Tmax, seed=NULL, sig2=1,
   if (!is.null(seed)) set.seed(seed)
   n = nrow(x0);
   x = list(); y = list()
-  x[[1]] = x0
-  y[[1]] = simulate.y(x0, frac.obs, lik.params)
-  
+    x[[1]] = x0
+  if(class(avail.obs)=='list') {
+      y[[1]] = simulate.y(x0, avail.obs[[1]], lik.params)
+  } else {
+      y[[1]] = simulate.y(x0, avail.obs[[1]], lik.params)
+  }
+    
   if (Tmax > 1) { 
     
     if (!is.null(Q) && any(Q)) {
@@ -60,7 +65,8 @@ simulate.xy = function(x0, E, Q, avail.obs, lik.params, Tmax, seed=NULL, sig2=1,
       } else {
         w = matrix(rep(0, n), ncol = 1)
       }
-      
+
+      #print(paste("Simulated w var: ", t(w) %*% Qinv %*% w/(n-1)))
       x[[t]] = E(x[[t - 1]]) + w
       
       if (class( avail.obs ) == 'list') 
@@ -69,7 +75,7 @@ simulate.xy = function(x0, E, Q, avail.obs, lik.params, Tmax, seed=NULL, sig2=1,
         y[[t]] = simulate.y(x[[t]], avail.obs, lik.params)
     } 
   }
-  
+    
   return(list(x = x, y = y))
   
 }

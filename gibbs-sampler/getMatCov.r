@@ -21,7 +21,7 @@ getMatCov = function(V, covariances, factor=FALSE){
 }
 
 
-getMatCovFromFunction = function(V, covfun){
+getMatCovFromFunction = function(V, covf){
   
   revNNarray = V$U.prep$revNNarray
   rows = c()
@@ -43,7 +43,7 @@ getMatCovFromFunction = function(V, covfun){
     mats[[d]] = D
   }
   d = sqrt(Reduce("+", mats))
-  vals = covfun(d)
+  vals = covf(d)
   
   return(vals)
 }
