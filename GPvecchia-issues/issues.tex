@@ -1,0 +1,97 @@
+% !TEX TS-program = pdflatex
+% !TEX encoding = UTF-8 Unicode
+
+% This is a simple template for a LaTeX document using the "article" class.
+% See "book", "report", "letter" for other types of document.
+
+\documentclass[11pt]{article} % use larger type; default would be 10pt
+
+\usepackage[utf8]{inputenc} % set input encoding (not needed with XeLaTeX)
+
+%%% Examples of Article customizations
+% These packages are optional, depending whether you want the features they provide.
+% See the LaTeX Companion or other references for full information.
+
+%%% PAGE DIMENSIONS
+\usepackage{geometry} % to change the page dimensions
+\geometry{a4paper} % or letterpaper (US) or a5paper or....
+ \geometry{margin=1in} % for example, change the margins to 2 inches all round
+% \geometry{landscape} % set up the page for landscape
+%   read geometry.pdf for detailed page layout information
+%\usepackage{\bm}
+\usepackage{graphicx} % support the \includegraphics command and options
+
+% \usepackage[parfill]{parskip} % Activate to begin paragraphs with an empty line rather than an indent
+
+%%% PACKAGES
+\usepackage{booktabs} % for much better looking tables
+\usepackage{array} % for better arrays (eg matrices) in maths
+\usepackage{paralist} % very flexible & customisable lists (eg. enumerate/itemize, etc.)
+\usepackage{verbatim} % adds environment for commenting out blocks of text & for better verbatim
+\usepackage{subfig} % make it possible to include more than one captioned figure/table in a single float
+% These packages are all incorporated in the memoir class to one degree or another...
+\newcommand{\bx}{\mathbf{x}}
+\newcommand{\by}{\mathbf{y}}
+\newcommand{\bv}{\mathbf{v}}
+\newcommand{\bI}{\mathbf{I}}
+\newcommand{\bH}{\mathbf{H}}
+\newcommand{\bfSigma}{\bm{\Sigma}}
+
+
+%%% HEADERS & FOOTERS
+\usepackage{fancyhdr} % This should be set AFTER setting up the page geometry
+\pagestyle{fancy} % options: empty , plain , fancy
+\renewcommand{\headrulewidth}{0pt} % customise the layout...
+\lhead{}\chead{}\rhead{}
+\lfoot{}\cfoot{\thepage}\rfoot{}
+
+%%% SECTION TITLE APPEARANCE
+\usepackage{sectsty}
+\allsectionsfont{\sffamily\mdseries\upshape} % (See the fntguide.pdf for font help)
+% (This matches ConTeXt defaults)
+
+%%% ToC (table of contents) APPEARANCE
+\usepackage[nottoc,notlof,notlot]{tocbibind} % Put the bibliography in the ToC
+\usepackage[titles,subfigure]{tocloft} % Alter the style of the Table of Contents
+\renewcommand{\cftsecfont}{\rmfamily\mdseries\upshape}
+\renewcommand{\cftsecpagefont}{\rmfamily\mdseries\upshape} % No bold!
+
+%%% END Article customizations
+
+%%% The "real" document content comes below...
+
+\title{Problems with \texttt{GPvecchia} variance estimates}
+\author{Marcin Jurek}
+%\date{} % Activate to display a given date or no date (if empty),
+         % otherwise the current date is printed 
+
+\begin{document}
+\maketitle
+
+Consider a zero-mean Gaussian random field $x(\cdot)$ defined on the $[0,1]^2$ domain and evaluated on a regular grid of dimensions $n_x \times n_y$. Let $\bx$ be a vector where each entry corresponds to the value of $x$ at a certain point of the gird. Assume that $x$ has an exponential covariance function with range parameter $\lambda$ and scale $\sigma^2$, i.e. 
+$$
+cov\left(x(s_1), x(s_2)\right) = \sigma^2 e^{-d(s_1, s_2)/\lambda}
+$$
+where $d(s_1, s_2)$ is the Euclidian distance between locations $s_1$ and $s_2$. This lets us write the distribution of $\bx$ as 
+$$
+\bx \sim \mathcal{N}(0, \sigma^2\Sigma),
+$$
+where we can write the $i,j$-th element of $\Sigma$ as  $\Sigma[i,j] = e^{-d(s_i, s_j)/\lambda}$.
+
+Using this notation we can write that $\Sigma^{-1/2}\bx \sim \mathcal{N}(0, \sigma^2 \bI)$. This means, we can estimate the variance parameter, $\sigma^2$ as
+\begin{equation}
+\hat{\sigma}^2 = \frac{1}{n-1}\bx^\top \Sigma^{-1} \bx 
+\label{eq:sig-est}
+\end{equation}
+where $n = n_xn_y$. 
+
+We also assume that we observe the values of the process at certain grid locartions and we label the vector of these observations $\by$. If we assume that the observations contain some iid Gaussian measurement error, we can write $\by = \bH\bx + \bv$, with $\bv \sim \mathcal{N}(0, \rho^2\bI)$ and $\bH$ being generated from the identity matrix by removing the rows corresponding to grid points with no data.
+
+\texttt{GPvecchia} exports the function \texttt{calculate\_posterior\_VL()} which returns, among other things, $\hat{\bx} = E(\bx|\by)$, the approximate posterior mean of $\bx$ given the data. If $\hat{\bx}$ is a good approximation of $\bx$, then one might expect that using it in \ref{eq:sig-est} would produce a good approximation of $\sigma^2$. In other words, if we define
+$$
+\hat{\hat{\sigma}}^2 = \frac{1}{n-1}\hat{\bx}^\top \Sigma^{-1} \hat{\bx},
+$$
+then we would expect $\hat{\hat{\sigma}}^2$ to be close to $\sigma^2$. 
+
+It turns out, however, that this is not the case, \textbf{even if the measurement error variance $\rho^2$ is very small}. For example in the attached file we used $\rho^2=10^{-8}$ and $\lambda=0.2$ and we assumed that half of the process is observed at half of all grid points. Our simulations also show that when we do not use the Vecchia approximation and calculate $\hat{\sigma}^2$ instead, it seems to be a an unbiased estimate of $\sigma^2$
+\end{document}
