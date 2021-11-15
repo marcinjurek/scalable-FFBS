@@ -21,7 +21,7 @@ locs = as.matrix(expand.grid(grid.oneside,grid.oneside))
 
 
 ## set initial state
-Sig0Model = RandomFields::RMmatern(nu = smooth, scale = range)
+Sig0Model = RandomFields::RMwhittle(nu = smooth, scale = range)
 x0 = RandomFields::RFsimulate(model = Sig0Model, x = locs[,1], y = locs[,2], spConform = FALSE)
 RandomFields::RFoptions(storing = FALSE)
 x0 = matrix( sig2 * x0, ncol = 1)
