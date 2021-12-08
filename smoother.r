@@ -1,85 +1,64 @@
-revMat = function(mat) mat[nrow(mat):1,ncol(mat):1,drop = FALSE]
-
+## vecchia-smoothed means
 smoothedMeans = function(approx, Y, lik.params, prior_covparams, Qcovparms, evolFun) {
 
-    preds = VecchiaFilter(appr, Y, lik.params, prior_covparms, Qcovparms, evolFun,
+    preds = VecchiaFilter(approx, Y, lik.params, prior_covparms, Qcovparms, evolFun,
                         saveUQ = c("L", "V"))
 
     Tmax = length(Y)
-    cat("Smoothing\n")
     means = list()
-    means[[ Tmax ]] = preds$preds[[ Tmax ]]
-
+    means[[Tmax]] = preds$preds[[Tmax]]
+    
     for (t in (Tmax - 1):1) {
-
-        #cat(paste("Smoothing: t=", t, "\n", sep = ""))
         
-        E = evolFun( Matrix::Diagonal( n ) )
-        L = preds$Ls[[ t ]]
-        V = preds$Vs[[ t ]]
+        E = evolFun(Matrix::Diagonal(n))
+        L = preds$Ls[[t + 1]]
+        V = preds$Vs[[t]]
 
-        #means[[ t ]] = means[[ t + 1 ]] - preds$forecast[[ t + 1 ]]
-        #means[[ t ]] = solve( L, means[[ t ]][ or ], sparse = TRUE )
-        #means[[ t ]] = Matrix::t( E ) %*% solve( Matrix::t( L ), means[[ t ]], sparse = TRUE)
-        #means[[ t ]] = matrix( rev( means[[ t ]] ), ncol = 1 )
-        #means[[ t ]] = solve( Matrix::t( V ), solve( V, means[[ t ]], sparse = TRUE ), sparse = TRUE )
-        #means[[ t ]] = preds$preds[[ t ]] + matrix( rev( means[[ t ]] )[ order( or ) ], ncol = 1 )
-
-        means[[ t ]] = means[[ t + 1 ]] - preds$forecast[[ t + 1 ]]
-        means[[ t ]] = solve(L, means[[ t ]], sparse = TRUE )
-        means[[ t ]] = solve( Matrix::t( L ), means[[ t ]], sparse = TRUE)
-        means[[ t ]] = Matrix::t( E ) %*% means[[ t ]]
-        means[[ t ]] = matrix(means[[ t ]], ncol = 1 )
-        means[[ t ]] = Matrix::t(V) %*% means[[ t ]]
-        means[[ t ]] = V %*% means[[ t ]]
-        means[[ t ]] = preds$preds[[ t ]] + matrix(means[[ t ]], ncol = 1 )
+        means[[t]] = means[[t + 1]] - preds$forecast[[t + 1]]
+        means[[t]] = solve(L, means[[t]], sparse = TRUE )
+        means[[t]] = solve( Matrix::t( L ), means[[t]], sparse = TRUE)
+        means[[t]] = Matrix::t( E ) %*% means[[t]]
+        means[[t]] = matrix(means[[t]], ncol = 1 )
+        means[[t]] = Matrix::t(V) %*% means[[t]]
+        means[[t]] = V %*% means[[t]]
+        means[[t]] = preds$preds[[t]] + matrix(means[[t]], ncol = 1 )
         
     }
-    #cat("done smoothing\n")
-    #return( means )
-
     return( list( means = means, preds = preds ) )
 }
     
 
 
-## KalmanSmoother = function(Y){
+## exact Kalman Smoother
+KalmanSmoother = function(Y, lik_params, prior_Cov, Q_cov,
+                        evolFun, prior_mean = NULL, saveUQ = "L") {
 
-##     cat(paste("Filtering"))
-##     filtered = KalmanFilter('exact', Y)
-##     Tmax = length(Y)
-##     or = approximations[['exact']]$ord
+    filtered = KalmanFilter(Y, lik_params, prior_Cov, Q_cov,
+                            evolFun, prior_mean = prior_mean, saveUQ = saveUQ)
+    n = length(Y[[1]])
+    Tmax = length(Y)
+    if (is.null(prior_mean)) {
+        prior_mean = matrix(rep(0, n), ncol = 1)
+    }
+    E = evolFun(Matrix::Diagonal(n))
     
-##     smoothed = list()
-##     vInv = solve( filtered[[ Tmax ]]$V, sparse = TRUE )
-##     sVar = revMat( t(vInv) %*% vInv )[ order(or), order(or) ]
-##     smoothed[[ Tmax ]] = list(state = filtered[[ Tmax ]]$state, var = sVar)
+    smoothed = list()
+    smoothedV = list()
+    smoothed[[Tmax]] = filtered$preds[[Tmax]]
+    smoothedV[[Tmax]] = solve(filtered$Vs[[Tmax]])
+   
+    for (t in (Tmax - 1):1) {
     
-##     E = evolFun( Matrix::Diagonal( n ) )[ or, or ]
-  
-##     for (t in (Tmax - 1):1) {
+        L = filtered$Ls[[t + 1]]
+        Linv = solve(L)
+        V = filtered$Vs[[t]]
+        mu_fi = filtered$preds[[t]]
+        mu_fo = filtered$forecast[[t + 1]]
+        J = V %*% Matrix::t(E) %*% Linv
+
+        smoothed[[t]] = mu_fi + J %*% (smoothed[[t + 1]] - mu_fo)
+        smoothedV[[t]] = V + J %*% (smoothedV[[t + 1]] - L) %*% Matrix::t(J)
+     }
     
-##         cat(paste("Smoothing: t=", t, "\n", sep = ""))
-    
-##         L = filtered[[ t ]]$L
-##         L.ord = filtered[[ t ]]$L[ order( or ), order( or ) ]
-##         V = filtered[[ t ]]$V
-##         Linv = solve( L, sparse = TRUE )
-##         Vinv = solve( V, sparse = TRUE )
-        
-##         C = revMat( Matrix::t( Vinv ) %*% Vinv %*% revMat( Matrix::t( E ) %*% Matrix::t( Linv ) %*% Linv ) )[ order( or ), order( or ) ]
-    
-##         smeans = smoothed[[ t + 1 ]]$state - filtered[[ t + 1 ]]$stateF        
-##         smeans = Matrix::t(E) %*% Matrix::t(Linv) %*% Linv %*% smeans[ or ]
-##         smeans = matrix( rev( smeans ), ncol = 1 )
-##         smeans = Matrix::t(Vinv) %*% Vinv %*% smeans
-##         smeans = filtered[[ t ]]$state + matrix( rev( smeans )[ order(or) ], ncol = 1 )
-        
-##         sVar = smoothed[[ t + 1 ]]$var - L.ord %*% Matrix::t(L.ord)
-##         sVar = L.ord %*% Matrix::t(L.ord) + C %*% sVar %*% Matrix::t(C)
-        
-##         smoothed[[ t ]] = list( state = smeans, var = sVar )
-##     }
-  
-##     return(list(smoothed = smoothed, filtered = filtered))
-## }
+    return(list(smoothed = smoothed, smoothedV = smoothedV, filtered = filtered))
+}
