@@ -1,22 +1,22 @@
 ## vecchia-smoothed means
 smoothedMeans = function(approx, Y, lik.params, prior_covparams, Qcovparms, evolFun) {
 
-    preds = VecchiaFilter(approx, Y, lik.params, prior_covparms, Qcovparms, evolFun,
+    preds = VecchiaFilter(approx, Y, lik.params, prior_covparams, Qcovparms, evolFun,
                         saveUQ = c("L", "V"))
-
+    n = length(Y[[1]])
     Tmax = length(Y)
     means = list()
     means[[Tmax]] = preds$preds[[Tmax]]
     
     for (t in (Tmax - 1):1) {
-        
+
         E = evolFun(Matrix::Diagonal(n))
         L = preds$Ls[[t + 1]]
         V = preds$Vs[[t]]
 
         means[[t]] = means[[t + 1]] - preds$forecast[[t + 1]]
-        means[[t]] = solve(L, means[[t]], sparse = TRUE )
-        means[[t]] = solve( Matrix::t( L ), means[[t]], sparse = TRUE)
+        means[[t]] = Matrix::solve(L, means[[t]], sparse = TRUE )
+        means[[t]] = Matrix::solve( Matrix::t( L ), means[[t]], sparse = TRUE)
         means[[t]] = Matrix::t( E ) %*% means[[t]]
         means[[t]] = matrix(means[[t]], ncol = 1 )
         means[[t]] = Matrix::t(V) %*% means[[t]]

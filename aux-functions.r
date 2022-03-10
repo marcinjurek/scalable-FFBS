@@ -3,7 +3,6 @@ getLtt = function(vecchia.approx, preds){
   orig.order = order(vecchia.approx$ord)
   V = preds$V
   L.tt = (Matrix::solve(Matrix::t(V), sparse = TRUE)[seq(n, 1), ])[orig.order,]
-  print("hello")
   return(L.tt)
 }
 

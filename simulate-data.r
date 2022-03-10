@@ -5,11 +5,12 @@ simulate.y = function(x, avail.obs, lik.params){
         x = matrix(x)
     }
     n = nrow(x)
-    n.obs = round(n*frac.obs)
     if( length( avail.obs ) == 1 ) {
+        n.obs = round(n*frac.obs)
         obs.inds = sample(1:n, n.obs, replace = FALSE)
     } else {
         obs.inds = which( !is.na(avail.obs) )
+        n.obs = length(obs.inds)
     }
   
     data.model = lik.params["data.model"]
