@@ -15,7 +15,8 @@ Sig0Mat = RFcovmatrix(Sig0Model, distances = dist(locs), dim = 2)
 ## define Vecchia aproximation
 mra = GPvecchia::vecchia_specify(locs, m, conditioning = 'mra')
 exact = GPvecchia::vecchia_specify(locs, N - 1, conditioning = "firstm")
-approximations = list(exact = exact, mra = mra)
+lowrank = GPvecchia::vecchia_specify(locs, m, conditioning = 'firstm')
+approximations = list(exact = exact, mra = mra, lowrank = lowrank)
 
 
 
@@ -33,7 +34,7 @@ d = data.frame(truth = c(), exact = c(), mra = c())
 
 for (iter in 1:maxiter) {
 
-    cat(sprintf("======== iter %d ========\n", iter))
+    cat(sprintf("%s iter %d\n", Sys.time(), iter))
     est = list()
     XY = simulate.xy(x0, evolFun, NULL, frac.obs, lik.params, Tmax,
                      sig2 = sig2, smooth = smooth, range = range, locs = locs)
@@ -51,6 +52,7 @@ for (iter in 1:maxiter) {
 
     for (name in names(approximations)) {
 
+        cat(sprintf("%s \tsampling using %s\n", Sys.time(), name))
         app = approximations[[name]]
         smoothed = FFBS(app, XY$y, lik.params, prior_covparms, covparms, evolFun, Num_samples = 1)
 
@@ -65,12 +67,19 @@ for (iter in 1:maxiter) {
         
     }
         
-    dloc = data.frame(truth = est[["truth"]], exact = est[["exact"]], mra = est[["mra"]])
+    dloc = data.frame(truth = est[["truth"]], exact = est[["exact"]], mra = est[["mra"]], lr = est[["lowrank"]])
     d = rbind(d, dloc)
 }
+
+cat(sprintf("%s done!\n", Sys.time()))
+cat(sprintf("Means of samples:\n"))
 print(colMeans(d))
-#oldpar = par(mfrow = c(3, 1))
-#hist(d$truth, xlim = range(d), breaks = 10)
-#hist(d$exact, xlim = range(d), breaks = 10)
-#hist(d$mra, xlim = range(d), breaks = 10)
-#par(oldpar)
+
+breaks = seq(range(d)[1], range(d)[2], length.out = 10)
+ylim = c(0, 20)
+oldpar = par(mfrow = c(4, 1))
+hist(d$truth, xlab = "", ylim = ylim, xlim = range(d), breaks = breaks, main = "True data")
+hist(d$exact, xlab = "", ylim = ylim, xlim = range(d), breaks = breaks, main = "Vecchia exact")
+hist(d$mra, xlab = "", ylim = ylim, xlim = range(d), breaks = breaks, main = "Vecchia - hierarchical")
+hist(d$lr, xlab = "sig2", ylim = ylim, xlim = range(d), breaks = breaks, main = "Low rank")
+par(oldpar)

@@ -1,3 +1,4 @@
+cat(paste(Sys.time(), " Calculating CRPS started\n", sep = ""))
 source('settings.r')
 library(RandomFields)
 library(doParallel)
@@ -23,11 +24,8 @@ low_rank = GPvecchia::vecchia_specify(locs, m, conditioning = 'firstm')
 
 
 approximations = list(mra = mra, lr = low_rank, exact = exact)
-#approximations = list(exact = exact)
 
 
-XY = simulate.xy(x0, evolFun, NULL, frac.obs, lik_params, Tmax,
-                 sig2 = sig2, smooth = smooth, range = range, locs = locs)
 
 ###### naive Kalman Smoother
 #KSsmooth = KalmanSmoother(XY$y)
@@ -38,45 +36,50 @@ XY = simulate.xy(x0, evolFun, NULL, frac.obs, lik_params, Tmax,
 #scores = foreach(iter = 1:max.iter) %dopar% {
 scores = list()
 for (iter in 1:max.iter) {
-    cat(paste("Starting iteration ", iter, "\n", sep = ""))
+    cat(paste(Sys.time(), " Starting iteration ", iter, "\n", sep = ""))
+    XY = simulate.xy(x0, evolFun, NULL, frac.obs, lik_params, Tmax,
+                     sig2 = sig2, smooth = smooth, range = range, locs = locs)
     local_scores = list()    
     for (name in names(approximations)) {
-        cat(paste("Using approximation ", name, "\n", sep = ""))
+        cat(paste(Sys.time(), " Using approximation ", name, "\n", sep = ""))
         smoothed = FFBS(approximations[[name]], XY$y, lik_params, prior_covparams,
-                        covparms, evolFun, Num_samples = Nsamples, covparams = NULL)
+                        covparms, evolFun, Num_samples = Nsamples)
         smoothedSamples = smoothed$samples
         local_scores[[name]] = getScores(XY$x, smoothedSamples)
     }
     scores[[iter]] = local_scores
-    #local_scores
+    tosave = Reduce('+', lapply(scores, as.data.frame))
+    write.csv(tosave, file = sprintf("sum-of-scores-after-%d-iterations.csv", iter))
 }
+
+
 
 
 #scores.KS = getScores(XY$x, smoothed = KSsmooth$smoothed)
-scores.per.method = list()
-scores.per.method[["exact"]] = rep(0, Tmax)
-for (iter in 1:max.iter) {
-    scores.per.method[["exact"]] = scores.per.method[["exact"]] + scores[[ iter ]][["exact"]]/max.iter
-}
+#scores.per.method = list()
+#scores.per.method[["exact"]] = rep(0, Tmax)
+#for (iter in 1:max.iter) {
+#    scores.per.method[["exact"]] = scores.per.method[["exact"]] + scores[[ iter ]][["exact"]]/max.iter
+#}
 
-for (name in names(approximations)) {
-    if (name!="exact") {
-        scores.per.method[[ name ]] = rep(0, Tmax)
-        for (iter in 1:max.iter) {
-            scores.per.method[[ name ]] = scores.per.method[[ name ]] + scores[[ iter ]][[ name ]]/max.iter
-        }
-    }
-    scores.per.method[[name]] = scores.per.method[[name]] / scores.per.method[["exact"]]
-}
+#for (name in names(approximations)) {
+#    if (name!="exact") {
+#        scores.per.method[[ name ]] = rep(0, Tmax)
+#        for (iter in 1:max.iter) {
+#            scores.per.method[[ name ]] = scores.per.method[[ name ]] + scores[[ iter ]][[ name ]]/max.iter
+#        }
+#    }
+#    scores.per.method[[name]] = scores.per.method[[name]] / scores.per.method[["exact"]]
+#}
 
-pdf("CRPS.pdf")
-line.colours = list(exact = "black", mra = "red", lr = "blue")
-plot(NULL, xlim = c(1, Tmax), ylim = range(sapply(scores.per.method, range)), ylab = "CRPS", xlab = "time")
-for (name in names(approximations)) {
-    lines(scores.per.method[[name]], col = line.colours[[name]])
-}
-legend("topright", names(approximations), col = unlist(line.colours[names(approximations)]), lwd = c(1, 1, 1))
-dev.off()
+#pdf("CRPS.pdf")
+#line.colours = list(exact = "black", mra = "red", lr = "blue")
+#plot(NULL, xlim = c(1, Tmax), ylim = range(sapply(scores.per.method, range)), ylab = "CRPS", xlab = "time")
+#for (name in names(approximations)) {
+#    lines(scores.per.method[[name]], col = line.colours[[name]])
+#}
+#legend("topright", names(approximations), col = unlist(line.colours[names(approximations)]), lwd = c(1, 1, 1))
+#dev.off()
 
 #meansPS = getMeansFromSamples(samples)
 #sdsPS   = getSDFromSamples(samples)

@@ -6,7 +6,7 @@ simulate.y = function(x, avail.obs, lik.params){
     }
     n = nrow(x)
     if( length( avail.obs ) == 1 ) {
-        n.obs = round(n*frac.obs)
+        n.obs = round(n*avail.obs)
         obs.inds = sample(1:n, n.obs, replace = FALSE)
     } else {
         obs.inds = which( !is.na(avail.obs) )
@@ -38,20 +38,20 @@ simulate.y = function(x, avail.obs, lik.params){
 
 
 ## simulate x
-simulate.xy = function(x0, E, Q, avail.obs, lik.params, Tmax, seed=NULL, sig2=1, smooth = 0.5, range = 1, locs = NULL){
+simulate.xy = function(x0, E, Qc, avail.obs, lik.params, Tmax, seed=NULL, sig2=NULL, smooth=NULL, range=NULL, locs = NULL){
 
     if (!is.null(seed)) set.seed(seed)
     n = nrow(x0);
     x = list(); y = list()   
 
-    if (!is.null(Q) && any(Q)) {
-        Qc = Matrix::chol(Q)
-    } 
+    #if (!is.null(Q) && any(Q)) {
+    #    Qc = t(Matrix::chol(Q))
+    #}
     for (t in 1:Tmax) {
 
-        if (sig2 > 0 || (!is.null(Q) && sum(abs(Q))>0)) {
-            if (!is.null(Q)) {
-                w =  t(Qc) %*% matrix(rnorm(n), ncol = 1)
+        if (sig2>0 || !is.null(Qc) && sum(abs(Qc))>0) {
+            if (!is.null(Qc)) {
+                w =  Qc %*% matrix(rnorm(n), ncol = 1)
             } else {
                 w = matrix(RandomFields::RFsimulate(model = RandomFields::RMwhittle(nu = smooth, scale = range, var = sig2),
                                                     x = locs[,1], y = locs[,2], spConform = FALSE), ncol=1)
@@ -59,7 +59,7 @@ simulate.xy = function(x0, E, Q, avail.obs, lik.params, Tmax, seed=NULL, sig2=1,
         } else {
             w = matrix(rep(0, n), ncol=1)
         }
-
+        
         if (t==1) {
             x[[t]] = E(x0) + w
         } else {

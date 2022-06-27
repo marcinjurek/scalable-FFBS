@@ -21,7 +21,8 @@ XY = simulate.xy(x0, evolFun, NULL, frac.obs, lik.params, Tmax,
 ## define Vecchia aproximation
 mra = GPvecchia::vecchia_specify(locs, m, conditioning = 'mra')
 exact = GPvecchia::vecchia_specify(locs, N - 1, conditioning = "firstm")
-approximations = list(exact = exact, mra = mra)
+lowrank = GPvecchia::vecchia_specify(locs, m, conditioning = "firstm")
+approximations = list(exact = exact, mra = mra, lowrank = lowrank)
 
 ## filtering
 Q_cov = sig2 * Sig0Mat

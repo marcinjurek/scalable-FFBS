@@ -16,11 +16,13 @@ registerDoParallel(cl)
 ######### set parameters #########
 set.seed(1988)
 spatial.dim = 2
+#n = 20 ** 2
+#m = 30
 n = 34**2
 m = 50
 Nsamples = 50
 frac.obs = 0.3
-Tmax = 5
+Tmax = 20
 max.iter = 50
 diffusion = 0.00004
 advection = 0.01
@@ -30,13 +32,13 @@ options(digits=4)
 
 ## covariance parameters
 sig_02 = 1
-sig2 = 0.5; range = .15; smooth = 0.5; 
+sig2 = 0.1; range = .15; smooth = 0.5; 
 covparms = c(sig2, range, smooth)
 prior_covparams = c(sig_02, range, smooth)
 covfun = function(locs) GPvecchia::MaternFun(fields::rdist(locs),covparms)
 covfun.d = function(D) GPvecchia::MaternFun(D, covparms)
 covfun_d_0 = function(D) GPvecchia::MaternFun(D, prior_covparams)
 
-me.var = 0.25
+me.var = 0.05
 data.model = "gauss"
 lik_params = list(data.model = data.model, sigma = sqrt(me.var), alpha = 2)

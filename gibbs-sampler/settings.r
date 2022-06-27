@@ -1,64 +1,36 @@
-setwd("~/FFBS/gibbs-sampler")
-source('../aux-functions.r')
-source('../smoother.r')
+source("../advection.r")
 source('../simulate-data.r')
-source('../advection.r')
-source('../filter.r')
-source('../FFBS.r')
-source('sig2-sample.r')
-resultsDir = "gibbs-sampler"
+source("../smoother.r")
+source("../FFBS.r")
+source("../filter.r")
+source("sig2-sample.r")
 library(RandomFields)
-library(Matrix)
 library(invgamma)
-
-options(digits=4)
+library(Matrix)
 
 ######### set parameters #########
 #set.seed(1988)
-spatial.dim = 2
-n = 20**2
-m = 30
-frac.obs = 1.0
-Tmax = 2
-advection = 0
-diffusion = 0
-
-
-evolFun = function(X) X#function(X) evolAdvDiff(X, adv = advection, diff = diffusion)
-Nsamples = 100
-max.iter = 1
+N = 34**2
+M = 50
+NSAMPLES = 100
+FRAC_OBS = 0.3
+TMAX = 20
+# 34 x 34 parameters
+evolFun = function(X) evolDiff(X, adv = 0.01, diff = 0.00004)
+#evolFun = function(X) evolDiff(X, adv = 0.1, diff = 0.0004)
 
 
 ## covariance parameters
-sig_02 = 1
-sig2 = 0.25; range = .25; smooth = 0.5; 
-covparms = c(sig2, range, smooth)
-prior_covparams = c(sig_02, range, smooth)
-
-covfun.base = function(locs, covparms) GPvecchia::MaternFun(fields::rdist(locs), covparms)
-covfun.base.d = function(D, covparms) GPvecchia::MaternFun(D, covparms)
-
-covfun = function(locs) covfun.base(locs, covparms)
-covfun.d = function(D) covfun.base.d(D, covparms)
-
+SIG_02 = 1
+SIG2 = 0.1; RANGE = .15; SMOOTH = 0.5; 
+COVPARMS = c(SIG2, RANGE, SMOOTH)
+PRIOR_COVPARMS = c(SIG_02, RANGE, SMOOTH)
+covfun = function(locs) GPvecchia::MaternFun(fields::rdist(locs), COVPARMS)
+covfun_d_0 = function(D) GPvecchia::MaternFun(D, PRIOR_COVPARMS)
 
 ## likelihood settings
-me.var = 0.1;
-args = commandArgs(trailingOnly = TRUE)
-if (length(args) == 1) {
-  if (!(args[1] %in% c("gauss", "poisson", "logistic", "gamma"))) {
-    stop("One of the models has to be passed as argument")
-  } else {
-    data.model = args[1]
-  }
-} else {
-  data.model = "gauss"  
-}
-lik.params = list(data.model = data.model, sigma = sqrt(me.var), alpha = 2)
-
-## parameter prior settings
-alpha = 5
-beta = 1
-
-mu.a = advection
-sig2.a = mu.a/6
+ME_VAR = 0.05;
+DATA_MODEL = "gauss"  
+LIK_PARMS = list(data.model = DATA_MODEL, sigma = sqrt(ME_VAR))
+ALPHA = 0.001
+BETA = 0.001

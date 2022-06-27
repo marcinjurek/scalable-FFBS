@@ -11,8 +11,8 @@ FFBS = function(approx, obs, lik.params, prior_covparams, Qcovparms,
     for (sample.no in 1:Num_samples) {
 
         if (verbose) {
-            cat(sprintf("%s Working on sample no %d\n", Sys.time(), sample.no))
-            cat(sprintf("%s Simulating data\n", Sys.time()))
+            cat(sprintf("%s FFBS: Working on sample no %d\n", Sys.time(), sample.no))
+            cat(sprintf("%s FFBS: Simulating data\n", Sys.time()))
         }
 
         Sig0Model = RMwhittle(nu = prior_covparams[3], scale = prior_covparams[2], var = prior_covparams[1])
@@ -28,7 +28,7 @@ FFBS = function(approx, obs, lik.params, prior_covparams, Qcovparms,
         sample  = mapply('+', XYplus$x, smeans, SIMPLIFY = FALSE)
 
         if (verbose) {
-            cat(sprintf("%s done working on sample %d\n", Sys.time(), sample.no))
+            cat(sprintf("%s FFBS: done working on sample %d\n", Sys.time(), sample.no))
         }
         samples[[sample.no]] = sample
         

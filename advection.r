@@ -46,7 +46,7 @@ evolDiff = function(state, adv = 0, alpha = 0, diff = 1/alpha, nsteps = 1, rho =
     E = Matrix::bandSparse(N, k=c(-Nx, -1, 0, 1, Nx), diag=diags)
 
     for (i in 1:nsteps) {
-        if (class(state) == 'matrix' || methods::is(state, 'sparseMatrix')){
+        if (methods::is(state, 'matrix') || methods::is(state, 'sparseMatrix')){
             state = E %*% state
         } else {
             state = as.numeric(E %*% as.matrix(state))
