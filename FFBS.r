@@ -7,6 +7,8 @@ FFBS = function(approx, obs, lik.params, prior_covparams, Qcovparms,
 
     revord = order(approx$ord)
     locs = approx$locsord[revord, ]
+
+    Sig0Model = RMwhittle(nu = prior_covparams[3], scale = prior_covparams[2], var = prior_covparams[1])
     
     for (sample.no in 1:Num_samples) {
 
@@ -15,9 +17,7 @@ FFBS = function(approx, obs, lik.params, prior_covparams, Qcovparms,
             cat(sprintf("%s FFBS: Simulating data\n", Sys.time()))
         }
 
-        Sig0Model = RMwhittle(nu = prior_covparams[3], scale = prior_covparams[2], var = prior_covparams[1])
         x0 = matrix(RFsimulate(model = Sig0Model, x = locs[, 1], y = locs[, 2], spConform = FALSE))
-
         XYplus = simulate.xy(x0, evolFun, NULL, obs, lik.params, Tmax, sig2 = Qcovparms[1],
                                   smooth = Qcovparms[3], range = Qcovparms[2], locs = locs)
 
@@ -32,7 +32,6 @@ FFBS = function(approx, obs, lik.params, prior_covparams, Qcovparms,
         }
         samples[[sample.no]] = sample
         
-
     }
     return( list(filteringResults = results, samples = samples) )
 }
